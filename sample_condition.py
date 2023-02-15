@@ -78,7 +78,8 @@ def main():
     data_config = task_config['data']
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                    transforms.CenterCrop(data_config['img_size'])])
+                                    transforms.CenterCrop(data_config['img_size'])
+                                    ])
     dataset = get_dataset(**data_config, transforms=transform)
     loader = get_dataloader(dataset, batch_size=1, num_workers=0, train=False)
 

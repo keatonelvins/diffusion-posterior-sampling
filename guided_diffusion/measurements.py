@@ -9,6 +9,7 @@ import skimage
 from torch.nn import functional as F
 from torchvision import torch
 from motionblur.motionblur import Kernel
+import torchvision.transforms as transforms
 
 from util.resizer import Resizer
 from util.img_utils import Blurkernel, fft2_m, fft2, ifft2
@@ -161,9 +162,11 @@ class ConvolutionOperator(LinearOperator):
         psf_bg = np.mean(psf[0 : 15, 0 : 15])             #102
         h = psf - psf_bg
 
-        h = skimage.transform.resize(h,(psf_size, psf_size),mode='constant', anti_aliasing=True)
+        h = skimage.transform.resize(h, (270, 480), mode='constant', anti_aliasing=True)
         h = h.transpose((2, 0, 1))
+        h = h[:,:-58,62:-18,]
         h = torch.tensor(h, device=device)
+        h = transforms.CenterCrop(256)(h) 
 
         self.channels, self.img_shape = h.shape[0], h.shape[1:]
         self.device = device
