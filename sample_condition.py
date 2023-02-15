@@ -45,7 +45,7 @@ def main():
     task_config = load_yaml(args.task_config)
    
     #assert model_config['learn_sigma'] == diffusion_config['learn_sigma'], \
-    #"learn_sigma must be the same for model and diffusion configuartion."
+    #"learn_sigma must be the same for model and diffusion configuration."
     
     # Load model
     model = create_model(**model_config)
