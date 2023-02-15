@@ -78,7 +78,7 @@ def main():
     data_config = task_config['data']
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                    transforms.CenterCrop(data_config.image_size)])
+                                    transforms.CenterCrop(data_config['img_size'])])
     dataset = get_dataset(**data_config, transforms=transform)
     loader = get_dataloader(dataset, batch_size=1, num_workers=0, train=False)
 
@@ -106,7 +106,8 @@ def main():
             y_n = noiser(y)
 
         if measure_config['operator']['name'] == 'convolution':
-            y = label
+            y = label.to(device)
+            y_n = noiser(y)
 
         else: 
             # Forward measurement model (Ax + n)
@@ -120,6 +121,8 @@ def main():
         plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
         plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sample))
+
+        break
 
 if __name__ == '__main__':
     main()

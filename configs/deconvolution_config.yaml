@@ -12,6 +12,7 @@ measurement:
   operator:
     name: convolution
     psf_path: ./data/diffuser_cam/psf.tiff
+    psf_size: 256
 
   noise: 
     name: gaussian

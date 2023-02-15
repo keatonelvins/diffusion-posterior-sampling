@@ -5,6 +5,7 @@ from functools import partial
 import yaml
 import numpy as np
 from PIL import Image
+import skimage
 from torch.nn import functional as F
 from torchvision import torch
 from motionblur.motionblur import Kernel
@@ -155,11 +156,14 @@ class InpaintingOperator(LinearOperator):
 
 @register_operator(name='convolution')
 class ConvolutionOperator(LinearOperator):
-    def __init__(self, psf_path, device):
-        my_psf = np.array(Image.open(psf_path))
-        psf_bg = np.mean(my_psf[0 : 15, 0 : 15])             #102
-        psf_down = self.downsample_ax(my_psf - psf_bg, factor=1) 
-        h = psf_down/np.linalg.norm(psf_down)
+    def __init__(self, psf_path, psf_size, device):
+        psf = np.array(Image.open(psf_path))
+        psf_bg = np.mean(psf[0 : 15, 0 : 15])             #102
+        h = psf - psf_bg
+
+        h = skimage.transform.resize(h,(psf_size, psf_size),mode='constant', anti_aliasing=True)
+        h = h.transpose((2, 0, 1))
+        h = torch.tensor(h, device=device)
 
         self.channels, self.img_shape = h.shape[0], h.shape[1:]
         self.device = device
@@ -174,17 +178,6 @@ class ConvolutionOperator(LinearOperator):
         hpad[:, self.starti:self.endi, self.startj:self.endj] = h
 
         self.h = fft2(hpad)
-    
-    def downsample_ax(self, img, factor):
-        n = int(np.log2(factor))
-        for i in range(n):
-            if len(img.shape) == 2:
-                img = .25 * (img[::2, ::2] + img[1::2, ::2]
-                    + img[::2, 1::2] + img[1::2, 1::2])
-            else:
-                img = .25 * (img[::2, ::2, :] + img[1::2, ::2, :]
-                    + img[::2, 1::2, :] + img[1::2, 1::2, :])
-        return(img)
 
     # Get nearest power of 2 that is larger than input (used for padding)
     def nextPow2(self, n):

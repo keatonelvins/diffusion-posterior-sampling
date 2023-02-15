@@ -61,7 +61,7 @@ class FFHQDataset(VisionDataset):
 class DiffuserDataset(VisionDataset):
     """Diffuser dataset https://waller-lab.github.io/LenslessLearning/dataset.html"""
 
-    def __init__(self, root: str, transforms: Optional[Callable]=None):
+    def __init__(self, root: str, img_size: int, transforms: Optional[Callable]=None):
         self.csv_contents = pd.read_csv(os.path.join(root, 'image_names.csv'))
         self.data_dir = os.path.join(root, 'diffuser') 
         self.label_dir = os.path.join(root, 'lensed') 
@@ -83,7 +83,7 @@ class DiffuserDataset(VisionDataset):
         image = image[:-58,62:-18,:]
         label = label[:-58,62:-18,:]
 
-        if self.transform:
+        if self.transforms:
             image = self.transforms(image)
             label = self.transforms(label)
 
