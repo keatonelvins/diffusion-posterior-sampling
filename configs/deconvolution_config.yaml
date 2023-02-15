@@ -6,10 +6,12 @@ conditioning:
 data:
   name: diffusercam
   root: ./data/diffuser_cam/
+  img_size: 256
 
 measurement:
   operator:
     name: convolution
+    psf_path: ./data/diffuser_cam/psf.tiff
 
   noise: 
     name: gaussian

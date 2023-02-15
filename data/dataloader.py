@@ -3,6 +3,9 @@ from PIL import Image
 from typing import Callable, Optional
 from torch.utils.data import DataLoader
 from torchvision.datasets import VisionDataset
+import pandas as pd
+import numpy as np
+import os
 
 
 __DATASET__ = {}
@@ -58,19 +61,11 @@ class FFHQDataset(VisionDataset):
 class DiffuserDataset(VisionDataset):
     """Diffuser dataset https://waller-lab.github.io/LenslessLearning/dataset.html"""
 
-    def __init__(self, csv_file, data_dir, label_dir, transform=None):
-        """
-        Args:
-            csv_file (string): Path to the csv file with annotations.
-            data_dir (string): Directory with all the Diffuser images.
-            label_dir (string): Directory with all the natural images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
-        self.csv_contents = pd.read_csv(csv_file)
-        self.data_dir = data_dir
-        self.label_dir = label_dir
-        self.transform = transform
+    def __init__(self, root: str, transforms: Optional[Callable]=None):
+        self.csv_contents = pd.read_csv(os.path.join(root, 'image_names.csv'))
+        self.data_dir = os.path.join(root, 'diffuser') 
+        self.label_dir = os.path.join(root, 'lensed') 
+        self.transforms = transforms
         
     def __len__(self):
         return len(self.csv_contents)
@@ -89,7 +84,7 @@ class DiffuserDataset(VisionDataset):
         label = label[:-58,62:-18,:]
 
         if self.transform:
-            image = self.transform(image)
-            label = self.transform(label)
+            image = self.transforms(image)
+            label = self.transforms(label)
 
-        return label, image
+        return image, label
