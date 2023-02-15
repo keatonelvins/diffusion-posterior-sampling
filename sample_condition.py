@@ -104,6 +104,9 @@ def main():
             y = operator.forward(ref_img, mask=mask)
             y_n = noiser(y)
 
+        if measure_config['operator']['name'] == 'convolution':
+            y = 0
+
         else: 
             # Forward measurement model (Ax + n)
             y = operator.forward(ref_img)

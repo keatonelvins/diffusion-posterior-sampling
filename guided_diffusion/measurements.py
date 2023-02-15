@@ -8,7 +8,7 @@ from torchvision import torch
 from motionblur.motionblur import Kernel
 
 from util.resizer import Resizer
-from util.img_utils import Blurkernel, fft2_m
+from util.img_utils import Blurkernel, fft2_m, fft2, ifft2
 
 
 # =================
@@ -151,6 +151,41 @@ class InpaintingOperator(LinearOperator):
     def ortho_project(self, data, **kwargs):
         return data - self.forward(data, **kwargs)
 
+@register_operator(name='convolution')
+class ConvolutionOperator(LinearOperator):
+    def __init__(self, h, device):
+        self.channels, self.img_shape = h.shape[0], h.shape[1:]
+        self.device = device
+        self.padded_shape = [self.nextPow2(2*n - 1) for n in self.img_shape]
+
+        self.starti = (self.padded_shape[0] - self.img_shape[0])//2
+        self.endi = self.starti + self.img_shape[0]
+        self.startj = self.padded_shape[1]//2 - self.img_shape[1]//2
+        self.endj = self.startj + self.img_shape[1]
+
+        hpad = torch.zeros([self.channels] + self.padded_shape, device=self.device)
+        hpad[:, self.starti:self.endi, self.startj:self.endj] = h
+
+        self.h = fft2(hpad)
+
+    # Get nearest power of 2 that is larger than input (used for padding)
+    def nextPow2(self, n):
+        return int(2**torch.ceil(torch.log2(torch.tensor(n))))
+
+    def crop(self, X):
+        return X[:, :, self.starti:self.endi, self.startj:self.endj]
+
+    def pad(self, v):
+        vpad = torch.zeros([v.shape[0], self.channels] + self.padded_shape, device=self.device)
+        vpad[:, :, self.starti:self.endi, self.startj:self.endj] = v
+        return vpad
+
+    def forward(self, data, **kwargs):
+        temp = fft2(self.pad(data))
+        return self.crop(ifft2(temp * self.h))
+
+    def transpose(self, data, **kwargs):
+        return data
 
 class NonLinearOperator(ABC):
     @abstractmethod
