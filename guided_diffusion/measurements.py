@@ -164,7 +164,7 @@ class ConvolutionOperator(LinearOperator):
 
         h = skimage.transform.resize(h, (270, 480), mode='constant', anti_aliasing=True)
         h = h.transpose((2, 0, 1))
-        h = h[:,:-58,62:-18,]
+        # h = h[:,:-58,62:-18,]
         h = torch.tensor(h, device=device)
         h = transforms.CenterCrop(256)(h) 
 

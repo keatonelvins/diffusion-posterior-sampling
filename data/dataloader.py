@@ -63,8 +63,8 @@ class DiffuserDataset(VisionDataset):
 
     def __init__(self, root: str, img_size: int, transforms: Optional[Callable]=None):
         self.csv_contents = pd.read_csv(os.path.join(root, 'image_names.csv'))
-        self.data_dir = os.path.join(root, 'diffuser') 
-        self.label_dir = os.path.join(root, 'lensed') 
+        self.data_dir = os.path.join(root, 'lensed') 
+        self.label_dir = os.path.join(root, 'diffuser') 
         self.transforms = transforms
         
     def __len__(self):
@@ -77,14 +77,14 @@ class DiffuserDataset(VisionDataset):
         path_diffuser = os.path.join(self.data_dir, img_name) 
         path_gt = os.path.join(self.label_dir, img_name)
         
-        image = np.load(path_diffuser+'.npy')
-        label = np.load(path_gt+'.npy')
+        lensed = np.load(path_diffuser+'.npy')
+        diffused = np.load(path_gt+'.npy')
 
-        image = image[:-58,62:-18,:]
-        label = label[:-58,62:-18,:]
+        # image = image[:-58,62:-18,:]
+        # label = label[:-58,62:-18,:]
 
         if self.transforms:
-            image = self.transforms(image)
-            label = self.transforms(label)
+            lensed = self.transforms(lensed)
+            diffused = self.transforms(diffused)
 
-        return image, label
+        return lensed, diffused
