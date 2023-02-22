@@ -1,0 +1,19 @@
+conditioning:
+  method: ps
+  params:
+    scale: 0.3
+
+data:
+  name: diffusercam
+  root: ./data/diffuser_cam/
+  img_size: 256
+
+measurement:
+  operator:
+    name: convolution
+    psf_path: ./data/diffuser_cam/psf.tiff
+    psf_size: 256
+
+  noise: 
+    name: gaussian
+    sigma: 0.05

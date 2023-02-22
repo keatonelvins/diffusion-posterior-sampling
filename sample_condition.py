@@ -77,7 +77,9 @@ def main():
     # Prepare dataloader
     data_config = task_config['data']
     transform = transforms.Compose([transforms.ToTensor(),
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                                    transforms.CenterCrop(data_config['img_size'])
+                                    ])
     dataset = get_dataset(**data_config, transforms=transform)
     loader = get_dataloader(dataset, batch_size=1, num_workers=0, train=False)
 
@@ -88,7 +90,7 @@ def main():
         )
         
     # Do Inference
-    for i, ref_img in enumerate(loader):
+    for i, (ref_img, label) in enumerate(loader):
         logger.info(f"Inference for image {i}")
         fname = str(i).zfill(5) + '.png'
         ref_img = ref_img.to(device)
@@ -104,6 +106,10 @@ def main():
             y = operator.forward(ref_img, mask=mask)
             y_n = noiser(y)
 
+        elif measure_config['operator'] ['name'] == 'convolution':
+            y = label.to(device)
+            y_n = noiser(y)
+
         else: 
             # Forward measurement model (Ax + n)
             y = operator.forward(ref_img)
@@ -116,6 +122,8 @@ def main():
         plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
         plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sample))
+
+        break
 
 if __name__ == '__main__':
     main()
