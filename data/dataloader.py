@@ -56,7 +56,11 @@ class FFHQDataset(VisionDataset):
             img = self.transforms(img)
         
         return img
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 03fc16befcfc82430431272702d0153296e2f56d
 @register_dataset(name='diffusercam')
 class DiffuserDataset(VisionDataset):
     """Diffuser dataset https://waller-lab.github.io/LenslessLearning/dataset.html"""

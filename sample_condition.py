@@ -90,7 +90,7 @@ def main():
         )
         
     # Do Inference
-    for i, (ref_img, label)  in enumerate(loader):
+    for i, (ref_img, label) in enumerate(loader):
         logger.info(f"Inference for image {i}")
         fname = str(i).zfill(5) + '.png'
         ref_img = ref_img.to(device)
@@ -106,7 +106,7 @@ def main():
             y = operator.forward(ref_img, mask=mask)
             y_n = noiser(y)
 
-        if measure_config['operator']['name'] == 'convolution':
+        elif measure_config['operator'] ['name'] == 'convolution':
             y = label.to(device)
             y_n = noiser(y)
 
