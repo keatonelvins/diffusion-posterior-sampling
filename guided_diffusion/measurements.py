@@ -8,7 +8,7 @@ from PIL import Image
 import numpy as np
 from torch.nn import functional as F
 from torchvision import torch, transforms
-from motionblur.motionblur import Kernel
+#from motionblur.motionblur import Kernel
 import torchvision.transforms as transforms
 
 from util.resizer import Resizer
@@ -164,52 +164,8 @@ class ConvolutionOperator(LinearOperator):
 
         h = skimage.transform.resize(h, (270, 480), mode='constant', anti_aliasing=True)
         h = h.transpose((2, 0, 1))
-        h = torch.tensor(h, device=device)
-        h = transforms.CenterCrop(256)(h) 
-
-        self.channels, self.img_shape = h.shape[0], h.shape[1:]
-        self.device = device
-        self.padded_shape = [self.nextPow2(2*n - 1) for n in self.img_shape]
-
-        self.starti = (self.padded_shape[0] - self.img_shape[0])//2
-        self.endi = self.starti + self.img_shape[0]
-        self.startj = self.padded_shape[1]//2 - self.img_shape[1]//2
-        self.endj = self.startj + self.img_shape[1]
-
-        hpad = torch.zeros([self.channels] + self.padded_shape, device=self.device)
-        hpad[:, self.starti:self.endi, self.startj:self.endj] = h
-
-        self.h = fft2(hpad)
-
-    # Get nearest power of 2 that is larger than input (used for padding)
-    def nextPow2(self, n):
-        return int(2**torch.ceil(torch.log2(torch.tensor(n))))
-
-    def crop(self, X):
-        return X[:, :, self.starti:self.endi, self.startj:self.endj]
-
-    def pad(self, v):
-        vpad = torch.zeros([v.shape[0], self.channels] + self.padded_shape, device=self.device)
-        vpad[:, :, self.starti:self.endi, self.startj:self.endj] = v
-        return vpad
-
-    def forward(self, data, **kwargs):
-        temp = fft2(self.pad(data))
-        return self.crop(ifft2(temp * self.h))
-
-    def transpose(self, data, **kwargs):
-        return data
-
-@register_operator(name='convolution')
-class ConvolutionOperator(LinearOperator):
-    def __init__(self, psf_path, psf_size, device):
-        psf = np.array(Image.open(psf_path))
-        psf_bg = np.mean(psf[0 : 15, 0 : 15])             #102
-        h = psf - psf_bg
-
-        h = skimage.transform.resize(h, (270, 480), mode='constant', anti_aliasing=True)
-        h = h.transpose((2, 0, 1))
         # h = h[:,:-58,62:-18,]
+        h /= np.linalg.norm(h.ravel())
         h = torch.tensor(h, device=device)
         h = transforms.CenterCrop(256)(h) 
 
@@ -225,7 +181,8 @@ class ConvolutionOperator(LinearOperator):
         hpad = torch.zeros([self.channels] + self.padded_shape, device=self.device)
         hpad[:, self.starti:self.endi, self.startj:self.endj] = h
 
-        self.h = fft2(hpad)
+        #self.h = fft2(hpad)
+        self.h = torch.fft.fft2(torch.fft.ifftshift(hpad))
 
     # Get nearest power of 2 that is larger than input (used for padding)
     def nextPow2(self, n):
@@ -240,8 +197,13 @@ class ConvolutionOperator(LinearOperator):
         return vpad
 
     def forward(self, data, **kwargs):
-        temp = fft2(self.pad(data))
-        return self.crop(ifft2(temp * self.h))
+        #temp = fft2(self.pad(data))
+        #result = self.crop(ifft2(temp * self.h))
+        #return torch.real(result) * 0.2912 / 15.9063 
+        temp = torch.fft.fft2(torch.fft.ifftshift(self.pad(data)))
+        result = self.crop(torch.fft.ifftshift(torch.fft.ifft2(temp * self.h)))
+        return torch.real(result) * 0.2912 / 49.7353
+
 
     def transpose(self, data, **kwargs):
         return data

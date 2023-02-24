@@ -91,8 +91,10 @@ def main():
         
     # Do Inference
     for i, (ref_img, label) in enumerate(loader):
+        print(ref_img.shape)
         logger.info(f"Inference for image {i}")
         fname = str(i).zfill(5) + '.png'
+        #label, ref_img = label.to(torch.float16), ref_img.to(torch.float16)
         ref_img = ref_img.to(device)
 
         # Exception) In case of inpainging,
@@ -108,7 +110,17 @@ def main():
 
         elif measure_config['operator'] ['name'] == 'convolution':
             y = label.to(device)
+            y = 0.5 * y + 0.5 # undo regularization
+            y *= 2.
+            ones = torch.ones_like(ref_img)
+            forward_ones = operator.forward(ones)
+            y = y - forward_ones
+
             y_n = noiser(y)
+            y_ref = operator.forward(ref_img)
+            print(y.max(), y.min())
+            print(y_ref.max(), y_ref.min())
+            print(ref_img.max(), ref_img.min())
 
         else: 
             # Forward measurement model (Ax + n)
@@ -119,7 +131,7 @@ def main():
         x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
         sample = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path)
 
-        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_n))
+        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y))
         plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sample))
 
