@@ -4,8 +4,10 @@ conditioning:
     scale: 0.3
 
 data:
-  name: diffusercam
-  root: ./data/diffuser_cam/
+  name: ffhq
+  root: ./data/samples/
+  #name: diffusercam
+  #root: ./data/diffuser_cam/
   img_size: 256
 
 measurement:
@@ -17,3 +19,4 @@ measurement:
   noise: 
     name: gaussian
     sigma: 0.05
+

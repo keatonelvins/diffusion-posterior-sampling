@@ -78,7 +78,7 @@ def main():
     data_config = task_config['data']
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                    transforms.CenterCrop(data_config['img_size'])
+                                    #transforms.CenterCrop(data_config['img_size'])
                                     ])
     dataset = get_dataset(**data_config, transforms=transform)
     loader = get_dataloader(dataset, batch_size=1, num_workers=0, train=False)
@@ -90,7 +90,8 @@ def main():
         )
         
     # Do Inference
-    for i, (ref_img, label) in enumerate(loader):
+    #for i, (ref_img, label) in enumerate(loader):
+    for i, ref_img in enumerate(loader):
         print(ref_img.shape)
         logger.info(f"Inference for image {i}")
         fname = str(i).zfill(5) + '.png'
@@ -105,34 +106,42 @@ def main():
             sample_fn = partial(sample_fn, measurement_cond_fn=measurement_cond_fn)
 
             # Forward measurement model (Ax + n)
-            y = operator.forward(ref_img, mask=mask)
-            y_n = noiser(y)
+            y_ref = operator.forward(ref_img, mask=mask)
+            y_n = noiser(y_ref)
 
-        elif measure_config['operator'] ['name'] == 'convolution':
-            y = label.to(device)
-            y = 0.5 * y + 0.5 # undo regularization
-            y *= 2.
-            ones = torch.ones_like(ref_img)
-            forward_ones = operator.forward(ones)
-            y = y - forward_ones
 
-            y_n = noiser(y)
+        elif measure_config['operator']['name'] == 'convolution':
+            #y = label.to(device)
+            #y_n = noiser(y)
+
+            #y = 0.5 * y + 0.5 # undo regularization
+            #y *= 2.
+            #ones = torch.ones_like(ref_img)
+            #forward_ones = operator.forward(ones)
+            #y = y - forward_ones
+
             y_ref = operator.forward(ref_img)
-            print(y.max(), y.min())
+            y_n = noiser(y_ref)
+            #print(y.max(), y.min())
             print(y_ref.max(), y_ref.min())
             print(ref_img.max(), ref_img.min())
 
         else: 
             # Forward measurement model (Ax + n)
-            y = operator.forward(ref_img)
-            y_n = noiser(y)
+            y_ref = operator.forward(ref_img)
+            y_n = noiser(y_ref)
+
+            print(y_ref.max(), y_ref.min())
+            print(ref_img.max(), ref_img.min())
          
+        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y_ref))
+        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
+
         # Sampling
         x_start = torch.randn(ref_img.shape, device=device).requires_grad_()
-        sample = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path)
+        #sample = sample_fn(x_start=x_start, measurement=y_n, record=True, save_root=out_path)
+        sample = sample_fn(x_start=x_start, measurement=y_ref, record=True, save_root=out_path)
 
-        plt.imsave(os.path.join(out_path, 'input', fname), clear_color(y))
-        plt.imsave(os.path.join(out_path, 'label', fname), clear_color(ref_img))
         plt.imsave(os.path.join(out_path, 'recon', fname), clear_color(sample))
 
         break

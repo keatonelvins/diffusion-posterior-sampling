@@ -158,16 +158,17 @@ class InpaintingOperator(LinearOperator):
 @register_operator(name='convolution')
 class ConvolutionOperator(LinearOperator):
     def __init__(self, psf_path, psf_size, device):
-        psf = np.array(Image.open(psf_path))
+        psf = np.array(Image.open(psf_path))/255.
         psf_bg = np.mean(psf[0 : 15, 0 : 15])             #102
         h = psf - psf_bg
 
-        h = skimage.transform.resize(h, (270, 480), mode='constant', anti_aliasing=True)
+        #h = skimage.transform.resize(h, (270, 480), mode='constant', anti_aliasing=True)
         h = h.transpose((2, 0, 1))
-        # h = h[:,:-58,62:-18,]
-        h /= np.linalg.norm(h.ravel())
+        #h = h[:,:-58,62:-18,]
+
         h = torch.tensor(h, device=device)
         h = transforms.CenterCrop(256)(h) 
+        h /= torch.norm(h)
 
         self.channels, self.img_shape = h.shape[0], h.shape[1:]
         self.device = device
@@ -182,7 +183,9 @@ class ConvolutionOperator(LinearOperator):
         hpad[:, self.starti:self.endi, self.startj:self.endj] = h
 
         #self.h = fft2(hpad)
-        self.h = torch.fft.fft2(torch.fft.ifftshift(hpad))
+        self.h = torch.fft.fft2(torch.fft.ifftshift(hpad, dim=(-1,-2))) 
+        self.h = self.h.view((1,)+self.h.shape)
+
 
     # Get nearest power of 2 that is larger than input (used for padding)
     def nextPow2(self, n):
@@ -199,10 +202,10 @@ class ConvolutionOperator(LinearOperator):
     def forward(self, data, **kwargs):
         #temp = fft2(self.pad(data))
         #result = self.crop(ifft2(temp * self.h))
-        #return torch.real(result) * 0.2912 / 15.9063 
-        temp = torch.fft.fft2(torch.fft.ifftshift(self.pad(data)))
-        result = self.crop(torch.fft.ifftshift(torch.fft.ifft2(temp * self.h)))
-        return torch.real(result) * 0.2912 / 49.7353
+        #return torch.real(result) / 22.
+        temp = torch.fft.fft2(torch.fft.ifftshift(self.pad(data), dim=(-1,-2))) 
+        result = self.crop(torch.fft.fftshift(torch.fft.ifft2(temp * self.h),dim=(-2,-1)))
+        return torch.real(result)/30.
 
 
     def transpose(self, data, **kwargs):
