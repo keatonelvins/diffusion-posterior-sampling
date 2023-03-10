@@ -8,7 +8,7 @@ data:
   root: ./data/samples/
   #name: diffusercam
   #root: ./data/diffuser_cam/
-  img_size: 256
+  #img_size: 256
 
 measurement:
   operator:
